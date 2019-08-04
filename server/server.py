@@ -36,7 +36,7 @@ serversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 #Get desired port
 port = int(input("Enter port: "))
-host = "localhost"
+host = "0.0.0.0"
 
 #Listen on the local IP address and the desired port
 serversock.bind((host, port))
