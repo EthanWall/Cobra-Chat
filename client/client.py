@@ -49,8 +49,8 @@ def send(sock, data):
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 #Get IP address and port to connect to
-address = "localhost"#input("Enter server address: ")
-port = 20#int(input("Enter port: "))
+address = input("Enter server address: ")
+port = int(input("Enter port: "))
 
 #Connect to specified IP and port
 s.connect((address, port))
