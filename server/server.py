@@ -85,7 +85,7 @@ def closeUser(sock):
     try:
         name = clients.pop(sock)
         sock.close()
-        broadcastAll("{0} has left the chatroom!".format(name))
+        broadcastAll("{0} has left the chatroom!".format(name), sock)
     except IndexError:
         print("Attempted to remove a user that does not exist.")
     except Exception:
