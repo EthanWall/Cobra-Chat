@@ -24,26 +24,13 @@ along with Cobra Chat. If not, see <https://www.gnu.org/licenses/>.
 import socket
 import threading
 import traceback
+import tkinter as tk
 
 clients = {} #Dict of connected clients
 prefix = "/" #Command prefix
+running = True
 
-#Make a socket variable
-serversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-#Make socket reusable
-serversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-#Get desired port
-port = int(input("Enter port: "))
-host = "0.0.0.0"
-
-#Listen on the local IP address and the desired port
-serversock.bind((host, port))
-
-#Listen for activity on the socket
-serversock.listen(5)   
-
+#Create functions
 #Broadcast a message to all users (except for users in the exceptions list)
 def broadcastAll(msg, exceptions=[]):
     print(msg)
@@ -101,9 +88,14 @@ def handleCmd(sock, msg):
     else:
         sock.send("That is not a command!".encode("utf-8"))
 
+#Write to a tkinter text element
+def output(txt, dest):
+    dest.configure(state="normal")
+    dest.insert(tk.END, "\n{0}".format(txt))
+    dest.configure(state="disable")
+
 #Handle a user chatting
 def handleChat(sock):
-    running = True
     while running:
         msg = recieveMsg(sock)
         
@@ -118,9 +110,77 @@ def handleChat(sock):
                 broadcastAll(msg, [sock])
         else:
             return
+
+def listener(serversock):
+    #Listen for activity on the socket
+    serversock.listen(5)
     
-while True:
-    #Accept join requests
-    clientsock, addr = serversock.accept()
-    t = threading.Thread(target=initUser, args=(clientsock,))
-    t.start()
+    while running:
+        #Accept join requests
+        clientsock, _addr = serversock.accept()
+        t = threading.Thread(target=initUser, args=(clientsock,))
+        t.start() 
+
+#Make a tkinter window
+root = tk.Tk()
+root.geometry("500x500")
+root.title("Cobra Chat Server")
+
+#Make frames
+setupFrame = tk.Frame(root) #Login window
+chatFrame = tk.Frame(root) #Chat window
+
+#Make widgets for server create screen
+portLabel = tk.Label(setupFrame, text="Port number:")
+portInput = tk.Entry(setupFrame)
+startButton = tk.Button(setupFrame, text="Start Server", command=lambda: main(portInput.get()))
+
+#Bind keys for server create screen
+root.bind("<Enter>", lambda _event: main(portInput.get()))
+
+#Pack widgets for server create screen
+portLabel.pack()
+portInput.pack()
+startButton.pack()
+
+#Pack the server create screen
+setupFrame.pack()
+
+#Main function
+def main(port):
+    
+    #Convert the port to an integer
+    try:
+        port = int(port)
+    except Exception:
+        return
+    
+    #Make widgets for chat screen
+    chatOutput = tk.Text(chatFrame)
+    
+    #Pack widgets for chat screen
+    chatOutput.pack()
+    
+    #Configure widgets for chat screen
+    chatOutput.configure(state="disable")
+    
+    #Pack the chat screen
+    setupFrame.pack_forget()
+    chatFrame.pack()
+    
+    #Make a socket variable
+    serversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    #Make socket reusable
+    serversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    host = "0.0.0.0"
+
+    #Listen on the local IP address and the desired port
+    serversock.bind((host, port))
+    
+    t = threading.Thread(target=listener, args=(serversock,))
+    t.start() 
+
+tk.mainloop()
+running = False

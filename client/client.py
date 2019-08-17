@@ -33,6 +33,8 @@ running = True
 #Create functions
 #Receive messages from the server
 def recieveMsg(sock):
+    global running
+    
     try:
         msg = sock.recv(1024).decode()
     except (ConnectionResetError, ConnectionAbortedError):
@@ -66,7 +68,9 @@ def send(sock, data):
 
 #Write to a tkinter text element
 def output(txt, dest):
-    dest.insert(tk.END, "{0}\n".format(txt))
+    dest.configure(state="normal")
+    dest.insert(tk.END, "\n{0}".format(txt))
+    dest.configure(state="disable")
 
 def handleInput(sock, widg):
     msg = widg.get()
@@ -80,6 +84,7 @@ def handleInput(sock, widg):
 #Make a tkinter window
 root = tk.Tk()
 root.geometry("500x500")
+root.title("Cobra Chat Client")
 
 #Make frames
 loginFrame = tk.Frame(root) #Login window
@@ -92,7 +97,7 @@ usernameLabel = tk.Label(loginFrame, text="Username:")
 addressInput = tk.Entry(loginFrame)
 portInput = tk.Entry(loginFrame)
 usernameInput = tk.Entry(loginFrame)
-loginButton = tk.Button(loginFrame, text="Join", command=lambda: main(addressInput.get(), int(portInput.get()), usernameInput.get()))
+loginButton = tk.Button(loginFrame, text="Join", command=lambda: main(addressInput.get(), portInput.get(), usernameInput.get()))
 
 #Pack widgets for login screen
 addressLabel.pack()
@@ -103,11 +108,20 @@ usernameLabel.pack()
 usernameInput.pack()
 loginButton.pack()
 
+#Bind keys for login screen
+root.bind("<Enter>", lambda _event: main(addressInput.get(), portInput.get(), usernameInput.get()))
+
 #Pack the login screen
 loginFrame.pack()
 
 #Main function
 def main(address, port, username):
+    
+    #Convert the port to an integer
+    try:
+        port = int(port)
+    except Exception:
+        return
     
     #Create a socket variable
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -128,6 +142,13 @@ def main(address, port, username):
     chatInput.pack()
     sendButton.pack()
     
+    #Configure widgets for chat screen
+    chatOutput.configure(state="disable")
+    
+    #Bind keys for chat screen
+    root.unbind("<Enter>")
+    root.bind("<Enter>", lambda _event: handleInput(s, chatInput))
+    
     t = threading.Thread(target=listenToChat, args=(s,chatOutput,))
     t.start()
     
@@ -136,3 +157,4 @@ def main(address, port, username):
     chatFrame.pack()
     
 tk.mainloop()
+running = False
