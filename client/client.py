@@ -109,7 +109,7 @@ usernameInput.pack()
 loginButton.pack()
 
 #Bind keys for login screen
-root.bind("<Return>", lambda event: main(addressInput.get(), portInput.get(), usernameInput.get()))
+root.bind("<Return>", lambda _: main(addressInput.get(), portInput.get(), usernameInput.get()))
 
 #Pack the login screen
 loginFrame.pack()
@@ -156,7 +156,7 @@ def main(address, port, username):
     chatOutput.configure(state="disable")
     
     #Bind keys for chat screen
-    root.bind("<Return>", lambda event: handleInput(s, chatInput))
+    root.bind("<Return>", lambda _: handleInput(s, chatInput))
     
     t = threading.Thread(target=listenToChat, args=(s,chatOutput,))
     t.start()

@@ -118,7 +118,7 @@ def joinListener(serversock, sysOut):
     
     while running:
         #Accept join requests
-        clientsock, _addr = serversock.accept()
+        clientsock, _ = serversock.accept()
         t = threading.Thread(target=initUser, args=(clientsock, sysOut,))
         t.start() 
 
@@ -137,7 +137,7 @@ portInput = tk.Entry(setupFrame)
 startButton = tk.Button(setupFrame, text="Start Server", command=lambda: main(portInput.get()))
 
 #Bind keys for server create screen
-root.bind("<Return>", lambda event: main(portInput.get()))
+root.bind("<Return>", lambda _: main(portInput.get()))
 
 #Pack widgets for server create screen
 portLabel.pack()
