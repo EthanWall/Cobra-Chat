@@ -16,7 +16,7 @@ it under the terms of the GNU General Public License as published by
 Cobra Chat is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
+GNU General Public License for more details. 
 
 You should have received a copy of the GNU General Public License
 along with Cobra Chat. If not, see <https://www.gnu.org/licenses/>.
@@ -24,6 +24,7 @@ along with Cobra Chat. If not, see <https://www.gnu.org/licenses/>.
 import socket
 import threading
 import traceback
+import tkinter as tk
 
 #Define variables
 prefix = "/" #Command prefix
@@ -32,6 +33,8 @@ running = True
 #Create functions
 #Receive messages from the server
 def recieveMsg(sock):
+    global running
+    
     try:
         msg = sock.recv(1024).decode()
     except (ConnectionResetError, ConnectionAbortedError):
@@ -45,12 +48,12 @@ def recieveMsg(sock):
     return msg
 
 #Outputs all messages sent to the client
-def listenToChat(sock):
+def listenToChat(sock, out):
     while running:
         msg = recieveMsg(sock)
          
         if msg != None:
-            print(msg)
+            output(msg, out)
         else:
             return
 
@@ -59,33 +62,108 @@ def send(sock, data):
     try:
         sock.send(data.encode("utf-8"))
     except ConnectionResetError:
-        pass #Strait up do nothing I don't care
+        return
     except Exception:
         traceback.print_exc()
 
-#Create a socket variable
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#Write to a tkinter text element
+def output(txt, dest):
+    dest.configure(state="normal")
+    dest.insert(tk.END, "\n{0}".format(txt))
+    dest.configure(state="disable")
 
-#Get IP address and port to connect to
-address = input("Enter server address: ")
-port = int(input("Enter port: "))
-
-#Connect to specified IP and port
-s.connect((address, port))
-
-#Send the desired username
-username = input("Enter your username for this session: ")
-send(s, username)
-
-t = threading.Thread(target=listenToChat, args=(s,))
-t.start()
-
-while running:
-    msg = input("> ")
+def handleInput(sock, widg):
+    msg = widg.get()
+    widg.delete(0, tk.END)
     if msg == "{0}quit".format(prefix): #Explicitly declare functionality in client for quit command
-        s.close()
-        running = False
+        sock.close()
+        raise SystemExit
     else:
-        send(s, msg)
-        
-t.join()
+        send(sock, msg)
+
+#Make a tkinter window
+root = tk.Tk()
+root.geometry("500x500")
+root.title("Cobra Chat Client")
+
+#Make frames
+loginFrame = tk.Frame(root) #Login window
+chatFrame = tk.Frame(root) #Chat window
+
+#Make widgets for login screen
+addressLabel = tk.Label(loginFrame, text="Server address:")
+portLabel = tk.Label(loginFrame, text="Port number:")
+usernameLabel = tk.Label(loginFrame, text="Username:")
+addressInput = tk.Entry(loginFrame)
+portInput = tk.Entry(loginFrame)
+usernameInput = tk.Entry(loginFrame)
+loginButton = tk.Button(loginFrame, text="Join", command=lambda: main(addressInput.get(), portInput.get(), usernameInput.get()))
+
+#Pack widgets for login screen
+addressLabel.pack()
+addressInput.pack()
+portLabel.pack()
+portInput.pack()
+usernameLabel.pack()
+usernameInput.pack()
+loginButton.pack()
+
+#Bind keys for login screen
+root.bind("<Return>", lambda _: main(addressInput.get(), portInput.get(), usernameInput.get()))
+
+#Pack the login screen
+loginFrame.pack()
+
+#Main function
+def main(address, port, username):
+    #Unbind the Enter key
+    root.unbind("<Return>")
+    
+    #Convert the port to an integer
+    try:
+        port = int(port)
+    except ValueError:
+        return
+    except Exception:
+        traceback.print_exc()
+        return
+    
+    #Create a socket variable
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    #Connect to specified IP and port
+    try:
+        s.connect((address, port))
+    except ConnectionRefusedError:
+        return
+    except Exception:
+        traceback.print_exc()
+
+    #Send the desired username
+    send(s, username)
+    
+    #Make widgets for chat screen
+    chatOutput = tk.Text(chatFrame)
+    chatInput = tk.Entry(chatFrame)
+    sendButton = tk.Button(chatFrame, text="Send", command=lambda: handleInput(s, chatInput))
+    
+    #Pack widgets for chat screen
+    chatOutput.pack()
+    chatInput.pack()
+    sendButton.pack()
+    
+    #Configure widgets for chat screen
+    chatOutput.configure(state="disable")
+    
+    #Bind keys for chat screen
+    root.bind("<Return>", lambda _: handleInput(s, chatInput))
+    
+    t = threading.Thread(target=listenToChat, args=(s,chatOutput,))
+    t.start()
+    
+    #Setup frames
+    loginFrame.pack_forget()
+    chatFrame.pack()
+    
+tk.mainloop()
+running = False
