@@ -62,7 +62,7 @@ def send(sock, data):
     try:
         sock.send(data.encode("utf-8"))
     except ConnectionResetError:
-        pass #Strait up do nothing I don't care
+        return
     except Exception:
         traceback.print_exc()
 
@@ -109,25 +109,35 @@ usernameInput.pack()
 loginButton.pack()
 
 #Bind keys for login screen
-root.bind("<Enter>", lambda _event: main(addressInput.get(), portInput.get(), usernameInput.get()))
+root.bind("<Return>", lambda event: main(addressInput.get(), portInput.get(), usernameInput.get()))
 
 #Pack the login screen
 loginFrame.pack()
 
 #Main function
 def main(address, port, username):
+    #Unbind the Enter key
+    root.unbind("<Return>")
     
     #Convert the port to an integer
     try:
         port = int(port)
+    except ValueError:
+        return
     except Exception:
+        traceback.print_exc()
         return
     
     #Create a socket variable
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     #Connect to specified IP and port
-    s.connect((address, port))
+    try:
+        s.connect((address, port))
+    except ConnectionRefusedError:
+        return
+    except Exception:
+        traceback.print_exc()
 
     #Send the desired username
     send(s, username)
@@ -146,8 +156,7 @@ def main(address, port, username):
     chatOutput.configure(state="disable")
     
     #Bind keys for chat screen
-    root.unbind("<Enter>")
-    root.bind("<Enter>", lambda _event: handleInput(s, chatInput))
+    root.bind("<Return>", lambda event: handleInput(s, chatInput))
     
     t = threading.Thread(target=listenToChat, args=(s,chatOutput,))
     t.start()

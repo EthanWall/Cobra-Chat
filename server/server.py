@@ -33,7 +33,6 @@ running = True
 #Create functions
 #Broadcast a message to all users (except for users in the exceptions list)
 def broadcastAll(msg, exceptions=[]):
-    print(msg)
     for user in clients:
         if not user in exceptions:
             user.send(msg.encode("utf-8"))
@@ -53,7 +52,7 @@ def recieveMsg(sock):
     return msg
 
 #Handle user joining
-def initUser(sock):
+def initUser(sock, sysOut):
     #Get the username of a player
     name = recieveMsg(sock)
     
@@ -64,7 +63,7 @@ def initUser(sock):
         broadcastAll("{0} has joined the chatroom!".format(name), [sock])
         sock.send("Welcome to the chatroom, {0}!".format(name).encode("utf-8"))
         
-        handleChat(sock)
+        handleChat(sock, sysOut)
     else:
         return
 
@@ -95,7 +94,7 @@ def output(txt, dest):
     dest.configure(state="disable")
 
 #Handle a user chatting
-def handleChat(sock):
+def handleChat(sock, sysOut):
     while running:
         msg = recieveMsg(sock)
         
@@ -108,17 +107,19 @@ def handleChat(sock):
                 #[username] message
                 msg = "[{0}] {1}".format(clients[sock], msg)
                 broadcastAll(msg, [sock])
+                
+                output(msg, sysOut)
         else:
             return
 
-def listener(serversock):
+def joinListener(serversock, sysOut):
     #Listen for activity on the socket
     serversock.listen(5)
     
     while running:
         #Accept join requests
         clientsock, _addr = serversock.accept()
-        t = threading.Thread(target=initUser, args=(clientsock,))
+        t = threading.Thread(target=initUser, args=(clientsock, sysOut,))
         t.start() 
 
 #Make a tkinter window
@@ -136,7 +137,7 @@ portInput = tk.Entry(setupFrame)
 startButton = tk.Button(setupFrame, text="Start Server", command=lambda: main(portInput.get()))
 
 #Bind keys for server create screen
-root.bind("<Enter>", lambda _event: main(portInput.get()))
+root.bind("<Return>", lambda event: main(portInput.get()))
 
 #Pack widgets for server create screen
 portLabel.pack()
@@ -148,11 +149,16 @@ setupFrame.pack()
 
 #Main function
 def main(port):
+    #Unbind the Enter key
+    root.unbind("<Return>")
     
     #Convert the port to an integer
     try:
         port = int(port)
+    except ValueError:
+        return
     except Exception:
+        traceback.print_exc()
         return
     
     #Make widgets for chat screen
@@ -179,7 +185,7 @@ def main(port):
     #Listen on the local IP address and the desired port
     serversock.bind((host, port))
     
-    t = threading.Thread(target=listener, args=(serversock,))
+    t = threading.Thread(target=joinListener, args=(serversock, chatOutput,))
     t.start() 
 
 tk.mainloop()
