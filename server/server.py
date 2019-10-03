@@ -26,6 +26,8 @@ import threading
 import traceback
 import tkinter as tk
 
+from tkinter import ttk
+
 clients = {} #Dict of connected clients
 prefix = "/" #Command prefix
 running = True
@@ -127,14 +129,18 @@ root = tk.Tk()
 root.geometry("500x500")
 root.title("Cobra Chat Server")
 
+#Set style of window
+style = ttk.Style()
+style.theme_use("winnative")
+
 #Make frames
-setupFrame = tk.Frame(root) #Login window
-chatFrame = tk.Frame(root) #Chat window
+setupFrame = ttk.Frame(root) #Login window
+chatFrame = ttk.Frame(root) #Chat window
 
 #Make widgets for server create screen
-portLabel = tk.Label(setupFrame, text="Port number:")
-portInput = tk.Entry(setupFrame)
-startButton = tk.Button(setupFrame, text="Start Server", command=lambda: main(portInput.get()))
+portLabel = ttk.Label(setupFrame, text="Port number:")
+portInput = ttk.Entry(setupFrame)
+startButton = ttk.Button(setupFrame, text="Start Server", command=lambda: main(portInput.get()))
 
 #Bind keys for server create screen
 root.bind("<Return>", lambda _: main(portInput.get()))

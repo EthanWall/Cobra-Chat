@@ -26,6 +26,8 @@ import threading
 import traceback
 import tkinter as tk
 
+from tkinter import ttk
+
 #Define variables
 prefix = "/" #Command prefix
 running = True
@@ -86,18 +88,22 @@ root = tk.Tk()
 root.geometry("500x500")
 root.title("Cobra Chat Client")
 
+#Set style of window
+style = ttk.Style()
+style.theme_use("winnative")
+
 #Make frames
-loginFrame = tk.Frame(root) #Login window
-chatFrame = tk.Frame(root) #Chat window
+loginFrame = ttk.Frame(root) #Login window
+chatFrame = ttk.Frame(root) #Chat window
 
 #Make widgets for login screen
-addressLabel = tk.Label(loginFrame, text="Server address:")
-portLabel = tk.Label(loginFrame, text="Port number:")
-usernameLabel = tk.Label(loginFrame, text="Username:")
-addressInput = tk.Entry(loginFrame)
-portInput = tk.Entry(loginFrame)
-usernameInput = tk.Entry(loginFrame)
-loginButton = tk.Button(loginFrame, text="Join", command=lambda: main(addressInput.get(), portInput.get(), usernameInput.get()))
+addressLabel = ttk.Label(loginFrame, text="Server address:")
+portLabel = ttk.Label(loginFrame, text="Port number:")
+usernameLabel = ttk.Label(loginFrame, text="Username:")
+addressInput = ttk.Entry(loginFrame)
+portInput = ttk.Entry(loginFrame)
+usernameInput = ttk.Entry(loginFrame)
+loginButton = ttk.Button(loginFrame, text="Join", command=lambda: main(addressInput.get(), portInput.get(), usernameInput.get()))
 
 #Pack widgets for login screen
 addressLabel.pack()
@@ -144,8 +150,8 @@ def main(address, port, username):
     
     #Make widgets for chat screen
     chatOutput = tk.Text(chatFrame)
-    chatInput = tk.Entry(chatFrame)
-    sendButton = tk.Button(chatFrame, text="Send", command=lambda: handleInput(s, chatInput))
+    chatInput = ttk.Entry(chatFrame)
+    sendButton = ttk.Button(chatFrame, text="Send", command=lambda: handleInput(s, chatInput))
     
     #Pack widgets for chat screen
     chatOutput.pack()
