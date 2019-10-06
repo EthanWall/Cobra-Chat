@@ -31,6 +31,8 @@ from tkinter import ttk
 #Define variables
 prefix = "/" #Command prefix
 running = True
+history = []
+cursor = 0
 
 #Create functions
 #Receive messages from the server
@@ -75,13 +77,31 @@ def output(txt, dest):
     dest.configure(state="disable")
 
 def handleInput(sock, widg):
+    global history
+    global cursor
+    
     msg = widg.get()
     widg.delete(0, tk.END)
+    history += [msg]
+    cursor = len(history) - 1
+    print(history)
     if msg == "{0}quit".format(prefix): #Explicitly declare functionality in client for quit command
         sock.close()
         raise SystemExit
     else:
         send(sock, msg)
+
+def scrollHistory(direction, widg):
+    global cursor
+    
+    if direction.lower() == "up" and not cursor - 1 < 0:
+        cursor -= 1
+    elif direction.lower() == "down" and not cursor >= len(history):
+        cursor += 1
+    
+    #Replaces text in Entry
+    widg.delete(0, tk.END)
+    widg.insert(0, history[cursor])
 
 #Make a tkinter window
 root = tk.Tk()
@@ -140,7 +160,7 @@ def main(address, port, username):
     #Connect to specified IP and port
     try:
         s.connect((address, port))
-    except ConnectionRefusedError:
+    except (ConnectionRefusedError, OSError):
         return
     except Exception:
         traceback.print_exc()
@@ -153,7 +173,7 @@ def main(address, port, username):
     chatInput = ttk.Entry(chatFrame)
     sendButton = ttk.Button(chatFrame, text="Send", command=lambda: handleInput(s, chatInput))
     
-    #Pack widgets for chat screen
+    #Pack widgets for chat screen 
     chatOutput.pack()
     chatInput.pack()
     sendButton.pack()
@@ -163,6 +183,8 @@ def main(address, port, username):
     
     #Bind keys for chat screen
     root.bind("<Return>", lambda _: handleInput(s, chatInput))
+    root.bind("<Up>", lambda _: scrollHistory("up", chatInput))
+    root.bind("<Down>", lambda _: scrollHistory("down", chatInput))
     
     t = threading.Thread(target=listenToChat, args=(s,chatOutput,))
     t.start()
